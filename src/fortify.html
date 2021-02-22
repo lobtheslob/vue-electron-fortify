@@ -1,0 +1,141 @@
+<link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+
+<!-- Components -->
+<script defer type="module" src="https://fortifyapp.com/external/webcomponent/build/peculiar.esm.js"></script>
+<script defer nomodule src="https://fortifyapp.com/external/webcomponent/build/peculiar.js"></script>
+<link rel="stylesheet" href="https://fortifyapp.com/external/webcomponent/build/peculiar.css">
+
+<!-- Crypto -->
+<script src="https://fortifyapp.com/external/pvtsutils/pvtsutils.js"></script>
+<script src="https://fortifyapp.com/external/asn1js/asn1.min.js"></script>
+<script src="https://fortifyapp.com/external/pkijs/pki.min.js"></script>
+
+<style>
+  body {
+    height: 100vh;
+    background: #6D7D87;
+  }
+
+  section {
+    max-width: 660px;
+    width: calc(100% - 20px);
+    margin: 20px auto;
+  }
+</style>
+
+<section>
+  <br>
+  <pre><code id="output"></code></pre>
+</section>
+
+<script>
+  function formatPEM (raw, tag) {
+    var pemString = pvtsutils.Convert.ToBase64(raw);
+    var stringLength = pemString.length;
+    var resultString = "";
+
+    for (var i = 0, count = 0; i < stringLength; i++, count++) {
+      if (count > 63) {
+        resultString = resultString + '\n';
+        count = 0;
+      }
+
+      resultString = resultString + pemString[i];
+    }
+
+    return '-----BEGIN ' + tag.toUpperCase() + '-----\n' + resultString + '\n-----END ' + tag.toUpperCase() + '-----\n';
+  }
+
+  async function continueHandler(event) {
+    try {
+      var demoData = pvtsutils.Convert.FromUtf8String("Test message");
+      var provider = await event.detail.server.getCrypto(event.detail.providerId);
+
+      provider.sign = provider.subtle.sign.bind(provider.subtle);
+
+      pkijs.setEngine(
+        "newEngine",
+        provider,
+        new pkijs.CryptoEngine({
+          name: "",
+          crypto: provider,
+          subtle: provider.subtle,
+        })
+      );
+
+      var cert = await provider.certStorage.getItem(event.detail.certificateId);
+      var privateKey = await provider.keyStorage.getItem(event.detail.privateKeyId);
+      var certRawData = await provider.certStorage.exportCert('raw', cert);
+
+      var pkiCert = new pkijs.Certificate({
+        schema: asn1js.fromBER(certRawData).result,
+      });
+
+      var signedData = new pkijs.SignedData({
+        version: 1,
+        encapContentInfo: new pkijs.EncapsulatedContentInfo({
+          eContentType: "1.2.840.113549.1.7.1", // "data" content type
+        }),
+        signerInfos: [
+          new pkijs.SignerInfo({
+            version: 1,
+            sid: new pkijs.IssuerAndSerialNumber({
+              issuer: pkiCert.issuer,
+              serialNumber: pkiCert.serialNumber,
+            }),
+          }),
+        ],
+        certificates: [pkiCert],
+      });
+
+      var contentInfo = new pkijs.EncapsulatedContentInfo({
+        eContent: new asn1js.OctetString({
+          valueHex: demoData,
+        }),
+      });
+
+      signedData.encapContentInfo.eContent = contentInfo.eContent;
+
+      await signedData.sign(privateKey, 0, "sha-256");
+
+      var cms = new pkijs.ContentInfo({
+        contentType: "1.2.840.113549.1.7.2",
+        content: signedData.toSchema(true),
+      });
+      var result = cms.toSchema().toBER(false);
+      var pem = formatPEM(result, "CMS");
+
+      output.innerHTML = pem;
+    } catch (error) {
+      alert('Failed to sign CMS');
+      console.error(error);
+    }
+  }
+</script>
+<script>
+  var el = document.createElement('peculiar-fortify-certificates');
+  // el.language = 'ru';
+  el.debug = true;
+  el.filters = {
+    //   onlySmartcards: false,
+    //   expired: false,
+    onlyWithPrivateKey: true,
+    //   subjectDNMatch: 'apple',
+    //   subjectDNMatch: new RegExp(/apple/),
+    //   issuerDNMatch: 'demo',
+    //   issuerDNMatch: new RegExp(/demo/),
+    //   providerNameMatch: 'MacOS',
+    //   providerNameMatch: new RegExp(/MacOS/),
+    //   keyUsage: ['digitalSignature'],
+    //   certificateIdMatch: 'test',
+  };
+
+  el.addEventListener('cancel', function() {
+    alert('"cancel" callback');
+  });
+
+  el.addEventListener('continue', continueHandler);
+  
+  document.getElementsByTagName('section')[0].prepend(el);
+</script>
+

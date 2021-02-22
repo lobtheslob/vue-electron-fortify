@@ -1,4 +1,4 @@
-const { app, BrowserWindow } = require('electron')
+const { app, BrowserWindow, ipcMain } = require('electron')
 
 function createWindow () {
   const win = new BrowserWindow({
@@ -25,4 +25,10 @@ app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow()
   }
+})
+
+ipcMain.on('start-fortify', function (e, data) {
+  let win = new BrowserWindow({ width: 835, height: 600, webPreferences: {webSecurity: false} })
+  win.on('close', function () { win = null })
+  win.loadURL(`file://${__dirname}/fortify.html`)
 })

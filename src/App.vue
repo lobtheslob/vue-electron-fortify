@@ -1,60 +1,87 @@
 <template>
-  <v-app>
-    <v-app-bar
-      app
-      color="primary"
-      dark
-    >
-      <div class="d-flex align-center">
-        <v-img
-          alt="Vuetify Logo"
-          class="shrink mr-2"
-          contain
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-logo-dark.png"
-          transition="scale-transition"
-          width="40"
-        />
-
-        <v-img
-          alt="Vuetify Name"
-          class="shrink mt-1 hidden-sm-and-down"
-          contain
-          min-width="100"
-          src="https://cdn.vuetifyjs.com/images/logos/vuetify-name-dark.png"
-          width="100"
-        />
-      </div>
-
-      <v-spacer></v-spacer>
-
-      <v-btn
-        href="https://github.com/vuetifyjs/vuetify/releases/latest"
-        target="_blank"
-        text
-      >
-        <span class="mr-2">Latest Release</span>
-        <v-icon>mdi-open-in-new</v-icon>
-      </v-btn>
-    </v-app-bar>
-
-    <v-main>
-      <HelloWorld/>
-    </v-main>
-  </v-app>
+  <div id="app">
+    <header>
+      <nav>
+        <ul>
+          <li class="nav-item">
+            <router-link class="nav-link" :to="{name: 'Fortify'}" exact>
+              <img class="logo" src="./assets/logo.png"/>
+              Fortify
+            </router-link>
+          </li>
+        </ul>
+      </nav>
+    </header>
+    <div class="container">
+      <aside class="aside">
+        <router-view name="sidebar"/>
+      </aside>
+      <main>
+        <router-view/>
+      </main>
+    </div>
+  </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld';
 
 export default {
-  name: 'App',
-
-  components: {
-    HelloWorld,
-  },
-
-  data: () => ({
-    //
-  }),
+  name: 'app',
 };
 </script>
+
+<style>
+body {
+  background: linear-gradient(to bottom, #555, #999);
+  background-attachment: fixed;
+}
+</style>
+
+<style scoped>
+#app {
+  font-family: 'Avenir', Helvetica, Arial, sans-serif;
+}
+main {
+  padding: 30px;
+  background-color: white;
+  width: 964px;
+  min-height: 300px;
+}
+header {
+  background-color: #999;
+  width: 1184px;
+  margin: 0 auto;
+}
+ul {
+  padding: 3px;
+  display: flex;
+}
+.nav-item {
+  display: inline-block;
+  padding: 5px 10px;
+  font-size: 22px;
+  border-right: 1px solid #bbb;
+}
+.logo {
+  vertical-align: middle;
+  height: 30px;
+}
+.nav-link {
+  text-decoration: none;
+  color: inherit;
+}
+.router-link-active {
+  color: white;
+}
+.container {
+  display: flex;
+  margin: 10px auto 0 auto;
+  justify-content: center;
+}
+.aside {
+  padding: 30px;
+  background-color: #aaa;
+  width: 100px;
+  min-height: 300px;
+}
+</style>
